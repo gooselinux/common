@@ -2,10 +2,25 @@ ifndef NAME
 $(error "You can not run this Makefile without having NAME defined")
 endif
 
-CURL	?= $(shell if test -f /usr/bin/curl ; then echo "curl -H Pragma: -O -R -S --fail --show-error" ; fi)
-WGET	?= $(shell if test -f /usr/bin/wget ; then echo "wget -nd -m" ; fi)
+CURL	?= $(shell if test -f /usr/bin/curl ; then echo "/usr/bin/curl -H Pragma: -O -R -S --fail --show-error" ; fi)
+WGET	?= $(shell if test -f /usr/bin/wget ; then echo "/usr/bin/wget -nd -m" ; fi)
 CLIENT	?= $(if $(CURL),$(CURL),$(if $(WGET),$(WGET)))
 
 LOOKASIDE_HOST := http://pkgs.gooselinux.org
 LOOKASIDE_URI := $(LOOKASIDE_HOST)/pkgs
+
+SOURCEFILES := $(shell cat sources 2>/dev/null | awk '{ printf "%s/%s\n", $$1, $$2 }')
+
+sources: $(SOURCEFILES)
+
+$(SOURCEFILES):
+	@for sourcefile in $(SOURCEFILES); do \
+		$(CLIENT) $(LOOKASIDE_URI)/$(NAME)/$${sourcefile}; \
+	done
+
+	md5sum -c sources || ( echo 'md5sum check failed' && exit 1 )
+
+clean:
+	rm $(SOURCEFILES)
+
 
